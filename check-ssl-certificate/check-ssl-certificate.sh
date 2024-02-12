@@ -1,8 +1,21 @@
 #!/bin/bash
 
-WAZO_VERSION_FILE=("/usr/share/wazo/WAZO-VERSION")
+WAZO_VERSION_FILE="/usr/share/wazo/WAZO-VERSION"
 MINIMUM_REQUIRED_VERSION="24.01"
-CURRENT_WAZO_VERSION=$(cat "$WAZO_VERSION_FILE")
+
+if [ -f "$WAZO_VERSION_FILE" ]; then
+    CURRENT_WAZO_VERSION=$(cat "$WAZO_VERSION_FILE")
+else
+    echo "Le fichier $WAZO_VERSION_FILE n'existe pas. Veuillez entrer la version manuellement:"
+    read -r MANUAL_WAZO_VERSION
+
+    while ! is_valid_version "$MANUAL_WAZO_VERSION"; do
+        echo "La version saisie '$MANUAL_WAZO_VERSION' ne semble pas être au bon format (xx.xx). Merci de recommencer."
+        read -r MANUAL_WAZO_VERSION
+    done
+
+    CURRENT_WAZO_VERSION="$MANUAL_WAZO_VERSION"
+fi
 
 function is_valid_version() {
     if [[ $1 =~ ^[0-9]{2}\.[0-9]{2}$ ]]; then
@@ -16,7 +29,7 @@ check_expire_date() {
 
 certificate_end_date=$(echo | openssl s_client -connect localhost:443 2> /dev/null | openssl x509 -noout -enddate | cut -d '=' -f2)
 
-whiptail --title "Certificate Information" --msgbox "Your self-signed certificate expire at : $certificate_end_date. If is expired, you must regenerate it." 8 78
+whiptail --title "Certificate Information" --msgbox "Votre certificat auto-signé va expirer le : $certificate_end_date. Si cela est déjà arrivé, vous devrez le régénérer." 8 78
 
 generate_new
 
