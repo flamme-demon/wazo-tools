@@ -62,56 +62,44 @@ fi
 }
 
 run_renew_certificate(){
-if [ $1 = 0 ]; then
-       {
-            echo -e "XXX\n50\nAll Wazo Services stopping. Wait...\nXXX"
-            wazo-service stop all
-            echo -e "XXX\n100\nAll Wazo Services stopping... Done.\nXXX"
-            sleep 0.7
-    
-    if [ ! -f "$WAZO_VERSION_FILE" ]; then
-        echo "Le fichier $WAZO_VERSION_FILE n'existe pas. Veuillez entrer la version manuellement:"
-        read -r MANUAL_WAZO_VERSION
-    
-        while ! is_valid_version "$MANUAL_WAZO_VERSION"; do
-            echo "La version saisie '$MANUAL_WAZO_VERSION' ne semble pas être au bon format (xx.xx). Merci de recommencer."
-            read -r MANUAL_WAZO_VERSION
-        done
+if [ $1 -eq 0 ]; then
+    echo -e "XXX\n50\nAll Wazo Services stopping. Wait...\nXXX"
+    wazo-service stop all
+    echo -e "XXX\n100\nAll Wazo Services stopping... Done.\nXXX"
+    sleep 0.7
+
+    if [[ $CURRENT_WAZO_VERSION -le $MINIMUM_REQUIRED_VERSION ]]; then
+        echo -e "XXX\n50\nBackup and remove certificates... Wait...\nXXX"
+        cp /usr/share/xivo-certs/server.{key,crt} /var/backups
+        rm /usr/share/xivo-certs/server.{key,crt}
+        echo -e "XXX\n100\nBackup and remove certificates... Done.\nXXX"
+        sleep 0.7
+
+        echo -e "XXX\n50\nRegenerate self-signed certificate... Wait...\nXXX"
+        dpkg-reconfigure xivo-certs /dev/null 2>&1
+        echo -e "XXX\n100\nRegenerate self-signed certificate... Done.\nXXX"
+        sleep 0.7
     else
-        if ("$CURRENT_WAZO_VERSION -le $MINIMUM_REQUIRED_VERSION" || "$MANUAL_WAZO_VERSION -le $MINIMUM_REQUIRED_VERSION")
-            echo -e "XXX\n50\nBackup and remove certificates... Wait...\nXXX"
-            cp /usr/share/xivo-certs/server.{key,crt} /var/backups
-            rm /usr/share/xivo-certs/server.{key,crt}
-            echo -e "XXX\n100\nBackup and remove certificates... Done.\nXXX"
-            sleep 0.7
+        echo -e "XXX\n50\nBackup and remove certificates... Wait...\nXXX"
+        cp /usr/share/wazo-certs/server.{key,crt} /var/backups
+        rm /usr/share/wazo-certs/server.{key,crt}
+        echo -e "XXX\n100\nBackup and remove certificates... Done.\nXXX"
+        sleep 0.7
 
-            echo -e "XXX\n50\nRegenerate self-signed certificate... Wait...\nXXX"
-            dpkg-reconfigure xivo-certs /dev/null 2>&1
-            echo -e "XXX\n100\nRegenerate self-signed certificate... Done.\nXXX"
-            sleep 0.7
-        else
-            echo -e "XXX\n50\nBackup and remove certificates... Wait...\nXXX"
-            cp /usr/share/wazo-certs/server.{key,crt} /var/backups
-            rm /usr/share/wazo-certs/server.{key,crt}
-            echo -e "XXX\n100\nBackup and remove certificates... Done.\nXXX"
-            sleep 0.7
-
-            echo -e "XXX\n50\nRegenerate self-signed certificate... Wait...\nXXX"
-            dpkg-reconfigure wazo-certs /dev/null 2>&1
-            echo -e "XXX\n100\nRegenerate self-signed certificate... Done.\nXXX"
-            sleep 0.7
-        fi
+        echo -e "XXX\n50\nRegenerate self-signed certificate... Wait...\nXXX"
+        dpkg-reconfigure wazo-certs /dev/null 2>&1
+        echo -e "XXX\n100\nRegenerate self-signed certificate... Done.\nXXX"
+        sleep 0.7
     fi
-            echo -e "XXX\n50\nRestart Wazo Services... Wait...\nXXX"
-            xivo-update-config /dev/null 2>&1
-            wazo-service start all
-            echo -e "XXX\n50\nRestart Wazo Services... Done.\nXXX"
-            sleep 0.7
 
-        } | whiptail --gauge "Wait Please" 6 60 0
-
-        bye
+    echo -e "XXX\n50\nRestart Wazo Services... Wait...\nXXX"
+    xivo-update-config /dev/null 2>&1
+    wazo-service start all
+    echo -e "XXX\n50\nRestart Wazo Services... Done.\nXXX"
+    sleep 0.7
 fi
+
+bye
 }
 
 bye(){
